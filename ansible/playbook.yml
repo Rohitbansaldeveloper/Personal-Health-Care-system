@@ -1,0 +1,11 @@
+---
+- name: Setup Kubernetes Cluster and Deploy Application
+  hosts: all
+  become: yes
+  vars:
+    namespace: healthcare-ns
+  roles:
+    - k8s-setup
+    - vault-setup
+    - elk-setup
+    - deploy-app

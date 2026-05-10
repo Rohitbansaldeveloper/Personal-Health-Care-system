@@ -1,0 +1,18 @@
+---
+# tasks file for k8s-setup
+- name: Ensure namespace exists
+  k8s:
+    name: "{{ namespace }}"
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Apply MySQL secret
+  k8s:
+    state: present
+    src: ../../../k8s/mysql-deployment.yaml
+
+- name: Apply HPA for Scalability
+  k8s:
+    state: present
+    src: ../../../k8s/hpa.yaml
