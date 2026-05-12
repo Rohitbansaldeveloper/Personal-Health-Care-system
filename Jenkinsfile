@@ -7,7 +7,7 @@ pipeline {
         BACKEND_IMAGE = "${DOCKER_HUB_USERNAME}/healthcare-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB_USERNAME}/healthcare-frontend"
         TAG = "${env.BUILD_ID}"
-        KUBECONFIG_CREDENTIALS_ID = 'k8s-kubeconfig'
+        KUBECONFIG_CREDENTIALS_ID = 'kubeconfig'
     }
 
     stages {
