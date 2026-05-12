@@ -19,19 +19,26 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                sh "docker build -t ${BACKEND_IMAGE}:${TAG} -t ${BACKEND_IMAGE}:latest backend"
-                sh "docker build -t ${FRONTEND_IMAGE}:${TAG} -t ${FRONTEND_IMAGE}:latest frontend"
+                script {
+                    docker.build("${BACKEND_IMAGE}:${TAG}", "backend")
+                    docker.build("${BACKEND_IMAGE}:latest", "backend")
+                    
+                    docker.build("${FRONTEND_IMAGE}:${TAG}", "frontend")
+                    docker.build("${FRONTEND_IMAGE}:latest", "frontend")
+                }
             }
         }
 
         stage('Push Docker Images') {
             steps {
-                withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIALS_ID}", passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                    sh "echo \\$DOCKER_PASSWORD | docker login -u \\$DOCKER_USERNAME --password-stdin"
-                    sh "docker push ${BACKEND_IMAGE}:${TAG}"
-                    sh "docker push ${BACKEND_IMAGE}:latest"
-                    sh "docker push ${FRONTEND_IMAGE}:${TAG}"
-                    sh "docker push ${FRONTEND_IMAGE}:latest"
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', "${DOCKER_CREDENTIALS_ID}") {
+                        docker.image("${BACKEND_IMAGE}:${TAG}").push()
+                        docker.image("${BACKEND_IMAGE}:latest").push()
+                        
+                        docker.image("${FRONTEND_IMAGE}:${TAG}").push()
+                        docker.image("${FRONTEND_IMAGE}:latest").push()
+                    }
                 }
             }
         }
