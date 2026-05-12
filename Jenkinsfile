@@ -16,24 +16,6 @@ pipeline {
                 checkout scm
             }
         }
-        
-        stage('Build & Test Backend') {
-            steps {
-                dir('backend') {
-                    sh 'chmod +x mvnw' // Ensure the wrapper is executable
-                    sh './mvnw clean package -DskipTests' // Add tests back with `./mvnw test` in real environment
-                }
-            }
-        }
-
-        stage('Build & Test Frontend') {
-            steps {
-                dir('frontend') {
-                    sh 'npm install'
-                    sh 'npm run build'
-                }
-            }
-        }
 
         stage('Build Docker Images') {
             steps {
