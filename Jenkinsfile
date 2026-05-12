@@ -20,7 +20,8 @@ pipeline {
         stage('Build & Test Backend') {
             steps {
                 dir('backend') {
-                    sh 'mvn clean package -DskipTests' // Add tests back with `mvn test` in real environment
+                    sh 'chmod +x mvnw' // Ensure the wrapper is executable
+                    sh './mvnw clean package -DskipTests' // Add tests back with `./mvnw test` in real environment
                 }
             }
         }
