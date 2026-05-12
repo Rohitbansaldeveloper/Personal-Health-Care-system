@@ -2,8 +2,8 @@ pipeline {
     agent any
     
     environment {
-        DOCKER_CREDENTIALS_ID = 'dockerhub-credentials'
-        DOCKER_HUB_USERNAME = 'your_dockerhub_username'
+        DOCKER_CREDENTIALS_ID = 'dockerhub-creds'
+        DOCKER_HUB_USERNAME = 'rohitbansal2113'
         BACKEND_IMAGE = "${DOCKER_HUB_USERNAME}/healthcare-backend"
         FRONTEND_IMAGE = "${DOCKER_HUB_USERNAME}/healthcare-frontend"
         TAG = "${env.BUILD_ID}"
