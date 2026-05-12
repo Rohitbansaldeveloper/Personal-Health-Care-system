@@ -33,13 +33,13 @@ export default function DoctorDashboard() {
 
   useEffect(() => {
     // Fetch previous messages
-    axios.get(`http://localhost:8080/api/chat/${userId}/${patientId}`)
+    axios.get(`http://localhost:8081/api/chat/${userId}/${patientId}`)
       .then(res => setMessages(res.data))
       .catch(err => console.error(err));
 
     // Initialize STOMP client
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
       onConnect: () => {
         client.subscribe(`/user/${userId}/queue/messages`, (msg) => {
           const newMsg = JSON.parse(msg.body);

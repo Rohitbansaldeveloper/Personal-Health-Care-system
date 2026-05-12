@@ -20,7 +20,7 @@ export default function Auth({ role }) {
     
     try {
       if (isLogin) {
-        const response = await axios.post('http://localhost:8080/api/auth/login', {
+        const response = await axios.post('http://localhost:8081/api/auth/login', {
           email: formData.email,
           password: formData.password,
           role: role.toUpperCase()
@@ -43,7 +43,7 @@ export default function Auth({ role }) {
           medicalLicenseId: role === 'doctor' ? formData.id : null
         };
         
-        const response = await axios.post('http://localhost:8080/api/auth/register', payload);
+        const response = await axios.post('http://localhost:8081/api/auth/register', payload);
         const user = response.data;
         
         localStorage.setItem('user', JSON.stringify(user));

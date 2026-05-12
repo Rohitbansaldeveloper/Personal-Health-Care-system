@@ -48,9 +48,9 @@ metadata:
   name: backend-service
   namespace: healthcare-ns
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   selector:
     app: backend
   ports:
-  - port: 8080
+  - port: 8081
     targetPort: 8080
