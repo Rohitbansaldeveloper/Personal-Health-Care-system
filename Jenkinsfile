@@ -74,9 +74,15 @@ pipeline {
         }
         success {
             echo "Deployment successful! Live patching (Rolling updates) applied automatically by Kubernetes."
+            mail to: 'your-email@example.com',
+                 subject: "SUCCESS: Jenkins Pipeline ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                 body: "Great news! Your deployment to Kubernetes was successful.\n\nBuild URL: ${env.BUILD_URL}"
         }
         failure {
             echo "Pipeline failed! Please check the logs."
+            mail to: 'your-email@example.com',
+                 subject: "FAILURE: Jenkins Pipeline ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                 body: "Unfortunately, the pipeline failed. Please check the logs here: ${env.BUILD_URL}"
         }
     }
 }
