@@ -129,6 +129,37 @@ The infrastructure is powered by an industry-standard DevOps toolchain:
 
 ---
 
+## 🏗 Deep Dive: Frontend & Backend Architecture
+
+The application is built on a **Decoupled Architecture**, where the frontend and backend operate independently but are tightly integrated through standardized communication protocols.
+
+### 🎨 Frontend (The Experience Layer)
+**Built with:** `React.js`, `Vite`, `Lucide React`, `Recharts`
+
+The frontend is a **Single Page Application (SPA)** that focuses on providing a high-performance, immersive user experience.
+- **Glassmorphism Design**: Custom-built CSS system utilizing backdrop filters, HSL color tokens, and transparency for a premium feel.
+- **State Management**: Uses React Hooks (`useState`, `useEffect`) to maintain real-time UI consistency.
+- **Client-Side Routing**: Handled by `React Router`, providing seamless transitions between the Patient and Doctor portals.
+- **External Integration**: Implements the **Google OAuth2** flow for secure wearable data ingestion.
+- **Real-time Engine**: Integrated with `@stomp/stompjs` to maintain a persistent connection to the messaging server.
+
+### ⚙️ Backend (The Logic Layer)
+**Built with:** `Spring Boot`, `Spring Security`, `Spring Data JPA`, `MySQL`
+
+The backend serves as the **Single Source of Truth** for the entire system.
+- **RESTful API**: Provides a secure set of endpoints for appointment booking, health record management, and activity tracking.
+- **Data Persistence**: Uses **Hibernate/JPA** for robust Object-Relational Mapping (ORM), ensuring medical data is stored safely in MySQL.
+- **Real-time Messaging**: Implements a **STOMP Message Broker** that routes messages between users based on their unique IDs.
+- **Security & RBAC**: Implements Role-Based Access Control to ensure doctors cannot access patient activity logs without authorization and vice versa.
+- **CORS Management**: Configured to securely handle requests from the Vite development server and production Kubernetes ingresses.
+
+### 🔗 The Connection: How They Work Together
+The frontend and backend communicate through two primary channels:
+1.  **JSON REST API**: For standard operations (like logging in or booking an appointment), the frontend sends an `HTTP POST/GET` request with a JSON payload. The backend processes the logic and returns a structured JSON response.
+2.  **WebSocket (TCP) Bridge**: For real-time features like the chat, the frontend opens a stateful **SockJS** connection. This allows the backend to "push" messages to the frontend instantly without the user needing to refresh the page.
+
+---
+
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
