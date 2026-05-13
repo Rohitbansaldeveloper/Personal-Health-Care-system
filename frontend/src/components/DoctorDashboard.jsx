@@ -9,6 +9,8 @@ export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState('patients');
   const [user, setUser] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [patients, setPatients] = useState([]);
   
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
@@ -42,22 +44,37 @@ export default function DoctorDashboard() {
     client.activate();
     setStompClient(client);
 
+    // Fetch real appointments and derive patients
+    axios.get(`${baseUrl}/api/appointments/doctor/${parsedUser.id}`)
+      .then(res => {
+        setAppointments(res.data);
+        // Extract unique patients from appointments
+        const uniquePatients = [];
+        const seenIds = new Set();
+        res.data.forEach(apt => {
+          if (apt.patient && !seenIds.has(apt.patient.id)) {
+            seenIds.add(apt.patient.id);
+            uniquePatients.push(apt.patient);
+          }
+        });
+        setPatients(uniquePatients);
+      })
+      .catch(err => console.log('Could not load appointments/patients'));
+
     return () => {
       if (client) client.deactivate();
     };
   }, [navigate]);
 
   useEffect(() => {
-    if (activeTab === 'chat' && user) {
-      // Mocked patient ID for demonstration
-      const patientId = 1; 
-      axios.get(`${baseUrl}/api/chat/${user.id}/${patientId}`)
+    if (activeTab === 'chat' && user && selectedPatient) {
+      axios.get(`${baseUrl}/api/chat/${user.id}/${selectedPatient.id}`)
         .then(res => {
           if (Array.isArray(res.data)) setMessages(res.data);
         })
-        .catch(err => console.log('Chat fetch issue (might be normal if empty):', err.message));
+        .catch(err => console.log('Chat fetch issue:', err.message));
     }
-  }, [activeTab, user, baseUrl]);
+  }, [activeTab, user, selectedPatient, baseUrl]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -66,12 +83,11 @@ export default function DoctorDashboard() {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!chatMessage.trim() || !stompClient || !user) return;
+    if (!chatMessage.trim() || !stompClient || !user || !selectedPatient) return;
 
-    const patientId = 1; // Fixed patient ID for demo purposes
     const messageObj = {
       senderId: user.id,
-      receiverId: patientId,
+      receiverId: selectedPatient.id,
       message: chatMessage
     };
 
@@ -135,29 +151,25 @@ export default function DoctorDashboard() {
           {activeTab === 'patients' && (
             <div>
               <h2 className="card-title"><Users size={24} style={{ color: 'var(--secondary)' }}/> Patient Roster</h2>
-              <div className="grid grid-cols-2" style={{ marginTop: '1.5rem' }}>
-                <div 
-                  className="report-item" 
-                  style={{ flexDirection: 'column', alignItems: 'flex-start', cursor: 'pointer', borderColor: selectedPatient === 1 ? 'var(--secondary)' : '' }}
-                  onClick={() => setSelectedPatient(1)}
-                >
-                  <div className="flex justify-between w-full items-center mb-2">
-                    <h3 style={{ fontWeight: '600' }}>John Smith</h3>
-                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>Active</span>
-                  </div>
-                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>ID: PT-10024 | Age: 45 | Male</p>
-                </div>
-                <div 
-                  className="report-item" 
-                  style={{ flexDirection: 'column', alignItems: 'flex-start', cursor: 'pointer', borderColor: selectedPatient === 2 ? 'var(--secondary)' : '' }}
-                  onClick={() => setSelectedPatient(2)}
-                >
-                  <div className="flex justify-between w-full items-center mb-2">
-                    <h3 style={{ fontWeight: '600' }}>Sarah Jenkins</h3>
-                    <span className="badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}>New</span>
-                  </div>
-                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>ID: PT-10025 | Age: 32 | Female</p>
-                </div>
+              <div className="grid grid-cols-2" style={{ marginTop: '1.5rem', gap: '1rem' }}>
+                {patients.length === 0 ? (
+                  <p className="text-muted" style={{ gridColumn: '1 / -1' }}>No patients assigned yet.</p>
+                ) : (
+                  patients.map(p => (
+                    <div 
+                      key={p.id}
+                      className="report-item" 
+                      style={{ flexDirection: 'column', alignItems: 'flex-start', cursor: 'pointer', borderColor: selectedPatient?.id === p.id ? 'var(--secondary)' : '' }}
+                      onClick={() => setSelectedPatient(p)}
+                    >
+                      <div className="flex justify-between w-full items-center mb-2">
+                        <h3 style={{ fontWeight: '600' }}>{p.name}</h3>
+                        <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>Active</span>
+                      </div>
+                      <p className="text-muted" style={{ fontSize: '0.85rem' }}>ID: PT-{p.id} | Email: {p.email}</p>
+                    </div>
+                  ))
+                )}
               </div>
               
               {selectedPatient && (
@@ -174,31 +186,30 @@ export default function DoctorDashboard() {
           {activeTab === 'appointments' && (
             <div>
               <h2 className="card-title"><Calendar size={24} style={{ color: 'var(--secondary)' }}/> Today's Schedule</h2>
-              <div className="report-item" style={{ marginTop: '1.5rem' }}>
-                <div className="flex items-center gap-4">
-                  <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.5rem 1rem', borderRadius: '8px', textAlign: 'center' }}>
-                    <strong style={{ display: 'block', color: 'var(--secondary)' }}>10:00</strong>
-                    <span className="text-muted" style={{ fontSize: '0.8rem' }}>AM</span>
-                  </div>
-                  <div>
-                    <h3 style={{ fontWeight: '600' }}>John Smith - Follow up</h3>
-                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>Room 302</p>
-                  </div>
-                </div>
-                <button className="btn btn-outline" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>View Record</button>
-              </div>
-              <div className="report-item">
-                <div className="flex items-center gap-4">
-                  <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.5rem 1rem', borderRadius: '8px', textAlign: 'center' }}>
-                    <strong style={{ display: 'block', color: 'var(--secondary)' }}>11:30</strong>
-                    <span className="text-muted" style={{ fontSize: '0.8rem' }}>AM</span>
-                  </div>
-                  <div>
-                    <h3 style={{ fontWeight: '600' }}>Sarah Jenkins - Initial Consult</h3>
-                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>Room 304</p>
-                  </div>
-                </div>
-                <button className="btn btn-outline" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>View Record</button>
+              <div style={{ marginTop: '1.5rem' }}>
+                {appointments.length === 0 ? (
+                  <p className="text-muted">No appointments scheduled for today.</p>
+                ) : (
+                  appointments.map(apt => (
+                    <div key={apt.id} className="report-item">
+                      <div className="flex items-center gap-4">
+                        <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.5rem 1rem', borderRadius: '8px', textAlign: 'center' }}>
+                          <strong style={{ display: 'block', color: 'var(--secondary)' }}>
+                            {new Date(apt.appointmentDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}
+                          </strong>
+                        </div>
+                        <div>
+                          <h3 style={{ fontWeight: '600' }}>{apt.patient?.name || 'Patient'} - Consultation</h3>
+                          <p className="text-muted" style={{ fontSize: '0.9rem' }}>{apt.notes || 'Routine Checkup'}</p>
+                        </div>
+                      </div>
+                      <button className="btn btn-outline" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }} onClick={() => {
+                        setSelectedPatient(apt.patient);
+                        setActiveTab('patients');
+                      }}>View Patient</button>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

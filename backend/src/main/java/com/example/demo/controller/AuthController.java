@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -40,5 +41,10 @@ public class AuthController {
             }
         }
         return ResponseEntity.status(401).body("Invalid email or password");
+    }
+
+    @GetMapping("/doctors")
+    public ResponseEntity<List<User>> getDoctors() {
+        return ResponseEntity.ok(userRepository.findByRoleIgnoreCase("DOCTOR"));
     }
 }

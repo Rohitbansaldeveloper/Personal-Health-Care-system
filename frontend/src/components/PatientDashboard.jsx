@@ -12,8 +12,9 @@ export default function PatientDashboard() {
   const [activeTab, setActiveTab] = useState('appointments');
   const [user, setUser] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [doctors, setDoctors] = useState([]);
   const [isBooking, setIsBooking] = useState(false);
-  const [newAppointment, setNewAppointment] = useState({ date: '', time: '', doctorId: 2, notes: '' });
+  const [newAppointment, setNewAppointment] = useState({ date: '', time: '', doctorId: '', notes: '' });
   const [activities, setActivities] = useState([]);
   const [records, setRecords] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -50,6 +51,19 @@ export default function PatientDashboard() {
     axios.get(`${baseUrl}/api/records/patient/${parsedUser.id}`)
       .then(res => setRecords(res.data))
       .catch(err => console.log('Could not load records'));
+
+    // Fetch real doctors
+    axios.get(`${baseUrl}/api/auth/doctors`)
+      .then(res => {
+        console.log("Fetched doctors:", res.data);
+        setDoctors(res.data);
+        if (res.data.length > 0) {
+          setNewAppointment(prev => ({ ...prev, doctorId: res.data[0].id }));
+        }
+      })
+      .catch(err => {
+        console.error('Could not load doctors:', err);
+      });
 
     // Initialize WebSocket connection for chat
     const client = new Client({
@@ -302,8 +316,13 @@ export default function PatientDashboard() {
                     <div className="form-group">
                       <label className="form-label">Doctor</label>
                       <select className="form-control" value={newAppointment.doctorId} onChange={e => setNewAppointment({...newAppointment, doctorId: parseInt(e.target.value)})}>
-                        <option value={2}>Dr. Sarah Smith (Cardiologist)</option>
-                        <option value={3}>Dr. John Doe (General)</option>
+                        {doctors.length === 0 ? (
+                          <option disabled>No doctors available</option>
+                        ) : (
+                          doctors.map(doc => (
+                            <option key={doc.id} value={doc.id}>Dr. {doc.name} ({doc.specialization || 'General'})</option>
+                          ))
+                        )}
                       </select>
                     </div>
                     <div className="form-group">
