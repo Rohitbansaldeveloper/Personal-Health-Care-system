@@ -1,214 +1,243 @@
 import { useState, useEffect } from 'react';
-import { Users, Calendar, MessageCircle, FileText, Send, Activity } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useNavigate } from 'react-router-dom';
+import { Users, Calendar, MessageCircle, FileText, Send, Activity, LogOut } from 'lucide-react';
+import axios from 'axios';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import axios from 'axios';
-
-const mockPatients = [
-  { id: 'PAT-8492', name: 'John Doe', age: 34, lastVisit: 'Oct 15, 2023' },
-  { id: 'PAT-1029', name: 'Jane Smith', age: 28, lastVisit: 'Oct 20, 2023' },
-];
-
-const mockActivityData = [
-  { name: 'Mon', steps: 4000, exercise: 0.5, water: 4 },
-  { name: 'Tue', steps: 6000, exercise: 1, water: 6 },
-  { name: 'Wed', steps: 8000, exercise: 1.5, water: 8 },
-  { name: 'Thu', steps: 7500, exercise: 1, water: 7 },
-  { name: 'Fri', steps: 10000, exercise: 2, water: 8 },
-  { name: 'Sat', steps: 12000, exercise: 2.5, water: 10 },
-  { name: 'Sun', steps: 9000, exercise: 1, water: 8 },
-];
 
 export default function DoctorDashboard() {
   const [activeTab, setActiveTab] = useState('patients');
+  const [user, setUser] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
   
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [stompClient, setStompClient] = useState(null);
+  const navigate = useNavigate();
 
-  const userId = 2; // Mocked doctor ID
-  const patientId = 1; // Mocked patient ID
+  // Smart URL resolving for both local development and Kubernetes
+  const baseUrl = window.location.hostname === 'localhost' ? 'http://localhost:8081' : '';
 
   useEffect(() => {
-    // Fetch previous messages
-    axios.get(`http://localhost:8081/api/chat/${userId}/${patientId}`)
-      .then(res => setMessages(res.data))
-      .catch(err => console.error(err));
+    const storedUser = localStorage.getItem('user');
+    if (!storedUser) {
+      navigate('/auth/doctor');
+      return;
+    }
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
 
-    // Initialize STOMP client
+    // Initialize WebSocket connection for chat
     const client = new Client({
-      webSocketFactory: () => new SockJS('http://localhost:8081/ws'),
+      webSocketFactory: () => new SockJS(`${baseUrl}/ws`),
       onConnect: () => {
-        client.subscribe(`/user/${userId}/queue/messages`, (msg) => {
-          const newMsg = JSON.parse(msg.body);
-          setMessages((prev) => [...prev, newMsg]);
+        client.subscribe(`/user/${parsedUser.id}/queue/messages`, (msg) => {
+          const newMessage = JSON.parse(msg.body);
+          setMessages(prev => [...prev, newMessage]);
         });
       },
+      debug: (str) => console.log(str)
     });
-
+    
     client.activate();
     setStompClient(client);
 
     return () => {
-      client.deactivate();
+      if (client) client.deactivate();
     };
-  }, []);
+  }, [navigate]);
+
+  useEffect(() => {
+    if (activeTab === 'chat' && user) {
+      // Mocked patient ID for demonstration
+      const patientId = 1; 
+      axios.get(`${baseUrl}/api/chat/${user.id}/${patientId}`)
+        .then(res => {
+          if (Array.isArray(res.data)) setMessages(res.data);
+        })
+        .catch(err => console.log('Chat fetch issue (might be normal if empty):', err.message));
+    }
+  }, [activeTab, user, baseUrl]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/');
+  };
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!chatMessage.trim() || !stompClient) return;
+    if (!chatMessage.trim() || !stompClient || !user) return;
 
-    const chatDTO = {
-      senderId: userId,
+    const patientId = 1; // Fixed patient ID for demo purposes
+    const messageObj = {
+      senderId: user.id,
       receiverId: patientId,
       message: chatMessage
     };
 
     stompClient.publish({
       destination: '/app/chat.send',
-      body: JSON.stringify(chatDTO)
+      body: JSON.stringify(messageObj)
     });
 
+    const optimisticMsg = {
+      id: Date.now(),
+      sender: { id: user.id },
+      message: chatMessage
+    };
+    
+    setMessages(prev => [...prev, optimisticMsg]);
     setChatMessage('');
   };
 
+  if (!user) return null;
+
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Doctor Dashboard</h1>
-        <span className="badge badge-confirmed">Dr. Smith</span>
-      </div>
-
-      <div className="flex gap-4 mb-4">
-        <button className={`btn ${activeTab === 'patients' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('patients')}>
-          <Users size={18} /> Patients
-        </button>
-        <button className={`btn ${activeTab === 'appointments' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('appointments')}>
-          <Calendar size={18} /> Schedule
-        </button>
-        <button className={`btn ${activeTab === 'chat' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setActiveTab('chat')}>
-          <MessageCircle size={18} /> Messages
-        </button>
-      </div>
-
-      {activeTab === 'patients' && !selectedPatient && (
-        <div className="card">
-          <h2 className="card-title">My Patients</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {mockPatients.map(patient => (
-              <div key={patient.id} className="report-item cursor-pointer hover:border-primary" onClick={() => setSelectedPatient(patient)}>
-                <div>
-                  <p className="font-bold">{patient.name}</p>
-                  <p className="text-secondary text-sm">ID: {patient.id} | Age: {patient.age}</p>
-                </div>
-                <button className="btn btn-outline btn-sm">View Record</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'patients' && selectedPatient && (
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <button className="btn btn-outline mb-4" onClick={() => setSelectedPatient(null)}>
-            &larr; Back to Patient List
-          </button>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="card">
-              <h2 className="card-title">Patient Profile: {selectedPatient.name}</h2>
-              <div className="mb-4">
-                <p><strong>Patient ID:</strong> {selectedPatient.id}</p>
-                <p><strong>Age:</strong> {selectedPatient.age}</p>
-                <p><strong>Last Visit:</strong> {selectedPatient.lastVisit}</p>
-              </div>
+          <h1 className="card-title" style={{ border: 'none', marginBottom: '0.25rem', fontSize: '2rem' }}>Doctor Dashboard</h1>
+          <p className="text-muted">Welcome back, Dr. {user.name} ({user.medicalLicenseId || 'MD'})</p>
+        </div>
+        <button onClick={handleLogout} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <LogOut size={18} /> Sign Out
+        </button>
+      </div>
 
-              <h3 className="font-bold mb-2 mt-4 border-b pb-2">Uploaded Records</h3>
+      <div className="grid" style={{ gridTemplateColumns: '250px 1fr', gap: '2rem' }}>
+        <div className="card" style={{ padding: '1rem', height: 'fit-content' }}>
+          <div className="flex" style={{ flexDirection: 'column', gap: '0.5rem' }}>
+            <button 
+              className={`btn ${activeTab === 'patients' ? 'btn-secondary' : 'btn-outline'}`}
+              style={{ justifyContent: 'flex-start', border: activeTab === 'patients' ? 'none' : '' }}
+              onClick={() => setActiveTab('patients')}
+            >
+              <Users size={20} /> My Patients
+            </button>
+            <button 
+              className={`btn ${activeTab === 'appointments' ? 'btn-secondary' : 'btn-outline'}`}
+              style={{ justifyContent: 'flex-start', border: activeTab === 'appointments' ? 'none' : '' }}
+              onClick={() => setActiveTab('appointments')}
+            >
+              <Calendar size={20} /> Schedule
+            </button>
+            <button 
+              className={`btn ${activeTab === 'chat' ? 'btn-secondary' : 'btn-outline'}`}
+              style={{ justifyContent: 'flex-start', border: activeTab === 'chat' ? 'none' : '' }}
+              onClick={() => setActiveTab('chat')}
+            >
+              <MessageCircle size={20} /> Messages
+            </button>
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '2.5rem' }}>
+          {activeTab === 'patients' && (
+            <div>
+              <h2 className="card-title"><Users size={24} style={{ color: 'var(--secondary)' }}/> Patient Roster</h2>
+              <div className="grid grid-cols-2" style={{ marginTop: '1.5rem' }}>
+                <div 
+                  className="report-item" 
+                  style={{ flexDirection: 'column', alignItems: 'flex-start', cursor: 'pointer', borderColor: selectedPatient === 1 ? 'var(--secondary)' : '' }}
+                  onClick={() => setSelectedPatient(1)}
+                >
+                  <div className="flex justify-between w-full items-center mb-2">
+                    <h3 style={{ fontWeight: '600' }}>John Smith</h3>
+                    <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399' }}>Active</span>
+                  </div>
+                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>ID: PT-10024 | Age: 45 | Male</p>
+                </div>
+                <div 
+                  className="report-item" 
+                  style={{ flexDirection: 'column', alignItems: 'flex-start', cursor: 'pointer', borderColor: selectedPatient === 2 ? 'var(--secondary)' : '' }}
+                  onClick={() => setSelectedPatient(2)}
+                >
+                  <div className="flex justify-between w-full items-center mb-2">
+                    <h3 style={{ fontWeight: '600' }}>Sarah Jenkins</h3>
+                    <span className="badge" style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8' }}>New</span>
+                  </div>
+                  <p className="text-muted" style={{ fontSize: '0.85rem' }}>ID: PT-10025 | Age: 32 | Female</p>
+                </div>
+              </div>
+              
+              {selectedPatient && (
+                <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <FileText size={20} style={{ color: 'var(--secondary)' }}/> Detailed Medical History
+                  </h3>
+                  <p className="text-muted" style={{ lineHeight: '1.6' }}>Patient reports intermittent chest pain. ECG scheduled for next week. Current medications include Lisinopril 10mg daily.</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'appointments' && (
+            <div>
+              <h2 className="card-title"><Calendar size={24} style={{ color: 'var(--secondary)' }}/> Today's Schedule</h2>
+              <div className="report-item" style={{ marginTop: '1.5rem' }}>
+                <div className="flex items-center gap-4">
+                  <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.5rem 1rem', borderRadius: '8px', textAlign: 'center' }}>
+                    <strong style={{ display: 'block', color: 'var(--secondary)' }}>10:00</strong>
+                    <span className="text-muted" style={{ fontSize: '0.8rem' }}>AM</span>
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: '600' }}>John Smith - Follow up</h3>
+                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>Room 302</p>
+                  </div>
+                </div>
+                <button className="btn btn-outline" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>View Record</button>
+              </div>
               <div className="report-item">
-                <div className="flex items-center gap-2">
-                  <FileText size={20} className="text-primary" />
-                  <span className="font-medium">Blood_Test_Results.pdf</span>
+                <div className="flex items-center gap-4">
+                  <div style={{ background: 'rgba(255, 255, 255, 0.05)', padding: '0.5rem 1rem', borderRadius: '8px', textAlign: 'center' }}>
+                    <strong style={{ display: 'block', color: 'var(--secondary)' }}>11:30</strong>
+                    <span className="text-muted" style={{ fontSize: '0.8rem' }}>AM</span>
+                  </div>
+                  <div>
+                    <h3 style={{ fontWeight: '600' }}>Sarah Jenkins - Initial Consult</h3>
+                    <p className="text-muted" style={{ fontSize: '0.9rem' }}>Room 304</p>
+                  </div>
                 </div>
-                <button className="btn btn-outline btn-sm text-xs">View</button>
+                <button className="btn btn-outline" style={{ fontSize: '0.85rem', padding: '0.4rem 0.8rem' }}>View Record</button>
               </div>
             </div>
+          )}
 
-            <div className="card">
-              <h2 className="card-title">Patient Activity Trends</h2>
-              <div style={{ height: '250px', width: '100%' }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={mockActivityData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <Tooltip />
-                    <Legend />
-                    <Line yAxisId="left" type="monotone" dataKey="steps" stroke="#4F46E5" activeDot={{ r: 8 }} />
-                    <Line yAxisId="right" type="monotone" dataKey="exercise" stroke="#10B981" />
-                    <Line yAxisId="right" type="monotone" dataKey="water" stroke="#0ea5e9" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
-          
-          <div className="card mt-4">
-            <h2 className="card-title">Add Prescription / Suggestion</h2>
-            <form>
-              <div className="form-group">
-                <label className="form-label">Notes</label>
-                <textarea className="form-control" rows="4" placeholder="Enter prescription or suggestions here..."></textarea>
-              </div>
-              <button className="btn btn-primary">Save to Patient Record</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'appointments' && (
-        <div className="card">
-          <h2 className="card-title">Today's Schedule</h2>
-          <div className="report-item">
-            <div className="flex items-center gap-4">
-              <div className="stat-icon"><Calendar size={24} /></div>
-              <div>
-                <p className="font-bold">10:00 AM - John Doe</p>
-                <p className="text-secondary text-sm">Routine Checkup</p>
-              </div>
-            </div>
-            <button className="btn btn-primary">Start Consultation</button>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'chat' && (
-        <div className="card">
-          <h2 className="card-title">Chat with Patient: John Doe</h2>
-          <div className="chat-container">
-            <div className="chat-messages">
-              {messages.map((msg) => (
-                <div key={msg.id} className={`chat-message ${msg.sender?.id === userId ? 'sent' : 'received'}`}>
-                  {msg.message}
+          {activeTab === 'chat' && (
+            <div>
+              <h2 className="card-title"><MessageCircle size={24} style={{ color: 'var(--secondary)' }}/> Patient Messages</h2>
+              <div className="chat-container">
+                <div className="chat-messages">
+                  {messages.length === 0 ? (
+                    <div style={{ margin: 'auto', color: 'var(--text-muted)', textAlign: 'center' }}>
+                      <MessageCircle size={48} style={{ opacity: 0.2, margin: '0 auto 1rem' }} />
+                      <p>Select a patient to view messages.</p>
+                    </div>
+                  ) : (
+                    messages.map((msg, idx) => (
+                      <div key={msg.id || idx} className={`chat-message ${msg.sender?.id === user.id ? 'sent' : 'received'}`}
+                           style={msg.sender?.id === user.id ? { background: 'linear-gradient(135deg, var(--secondary) 0%, var(--secondary-hover) 100%)' } : {}}>
+                        {msg.message}
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
+                <form className="chat-input" onSubmit={handleSendMessage}>
+                  <input
+                    type="text"
+                    value={chatMessage}
+                    onChange={(e) => setChatMessage(e.target.value)}
+                    placeholder="Type a secure response..."
+                  />
+                  <button type="submit" className="btn btn-secondary" style={{ border: 'none' }}>
+                    <Send size={20} />
+                  </button>
+                </form>
+              </div>
             </div>
-            <form className="chat-input" onSubmit={handleSendMessage}>
-              <input 
-                type="text" 
-                placeholder="Type your message..." 
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-              />
-              <button type="submit" className="btn btn-primary">
-                <Send size={18} />
-              </button>
-            </form>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
