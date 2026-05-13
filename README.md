@@ -160,6 +160,17 @@ The frontend and backend communicate through two primary channels:
 
 ---
 
+## 📸 Screen Gallery
+
+| Patient Dashboard & Analytics | Wearable Sync & IoT |
+| :---: | :---: |
+| ![Dashboard](images/dashboard.png) | ![Wearable](images/wearable.png) |
+
+> [!NOTE]
+> The UI uses a custom-built design system with HSL colors and dynamic backdrops.
+
+---
+
 ## 🚀 Getting Started
 
 ### 1. Prerequisites
