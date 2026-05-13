@@ -24,6 +24,48 @@ HealthCare Plus solves these issues by providing a **unified ecosystem**:
 
 ## 🔄 System Workflow
 
+```mermaid
+graph TD
+    subgraph Users
+        P[Patient]
+        D[Doctor]
+    end
+
+    subgraph "Frontend (React + Vite)"
+        UI[Glassmorphism Dashboard]
+        Auth[RBAC Auth Module]
+    end
+
+    subgraph "Backend (Spring Boot)"
+        API[REST Controllers]
+        WS[WebSocket / STOMP]
+    end
+
+    subgraph "Data & Services"
+        DB[(MySQL Database)]
+        GF[Google Fit API]
+    end
+
+    P -->|Register/Login| Auth
+    D -->|Register/Login| Auth
+    Auth -->|Authorize| UI
+    
+    P -->|Sync Data| GF
+    GF -->|OAuth2 Token| API
+    API -->|Persist Activity| DB
+    
+    P -->|Book Appointment| API
+    API -->|Update Schedule| DB
+    DB -->|Fetch Roster| D
+    
+    P <-->|Real-time Chat| WS
+    D <-->|Real-time Chat| WS
+    
+    P -->|Upload Records| API
+    API -->|Store & Link| DB
+    D -->|View Reports| DB
+```
+
 The application follows a secure, linear workflow designed for maximum efficiency:
 
 1.  **Identity Management**: Users register as either a **Patient** or a **Doctor**. Role-Based Access Control (RBAC) ensures data security.
