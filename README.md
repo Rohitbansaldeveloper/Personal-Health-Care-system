@@ -86,10 +86,32 @@ The application follows a secure, linear workflow designed for maximum efficienc
 - **Interactive Analytics**: Dynamic health improvement graphs using **Recharts**.
 
 ### 🛠 Enterprise CI/CD Pipeline
-- **Dockerized**: Fully containerized environment using Docker and Docker Compose.
-- **Kubernetes (K8s)**: Orchestrated deployment for high availability and scalability.
-- **Jenkins Pipeline**: Automated build, test, and deployment cycles defined in `Jenkinsfile`.
-- **Ansible Automation**: Automated server configuration and deployment playbooks.
+
+```mermaid
+graph LR
+    Dev[Developer] -->|Git Push| GH[GitHub Repository]
+    GH -->|Webhook| J[Jenkins Server]
+    
+    subgraph "CI Pipeline"
+        J -->|Build| M[Maven/NPM Build]
+        M -->|Test| UT[Unit/Integration Tests]
+        UT -->|Containerize| D[Docker Build]
+        D -->|Push| DR[Docker Registry]
+    end
+    
+    subgraph "CD Pipeline"
+        DR -->|Trigger| A[Ansible Playbook]
+        A -->|Configure| K[Kubernetes Cluster]
+        K -->|Deploy| POD[Live Application Pods]
+    end
+```
+
+The infrastructure is powered by an industry-standard DevOps toolchain:
+
+- **Jenkins (The Orchestrator)**: Acts as the "brain" of the operation. It automatically detects code changes on GitHub, triggers the build process, runs tests, and coordinates between Docker, Ansible, and Kubernetes.
+- **Docker (The Packaging)**: Ensures "it works on my machine" everywhere. Every part of the application (Frontend & Backend) is packaged into a lightweight, portable container that includes all its dependencies.
+- **Kubernetes (The Manager)**: Handles the production environment. If a part of the app crashes, K8s automatically restarts it. It also handles scaling and ensures the application is always highly available to patients and doctors.
+- **Ansible (The Automation)**: Automates the setup of our infrastructure. Instead of manually configuring servers, Ansible playbooks are used to deploy Kubernetes resources and configure the production environment in a predictable, repeatable way.
 
 ---
 
