@@ -201,6 +201,18 @@ To enable live syncing:
 
 ---
 
+## 🗺 Future Roadmap
+
+We are constantly evolving HealthCare Plus to include cutting-edge features:
+
+- [ ] **AI Health Assistant**: Integrated LLM for preliminary symptom checking and health advice based on wearable data.
+- [ ] **Pharmacy Integration**: Direct prescription sending to local pharmacies and automated medicine delivery tracking.
+- [ ] **Video Consultations**: Moving beyond text chat to secure, high-definition video conferencing for clinical sessions.
+- [ ] **Global Data Standards**: Implementing HL7 FHIR standards for seamless interoperability with hospital systems worldwide.
+- [ ] **Mobile Application**: Native iOS and Android apps built with React Native for better on-the-go tracking.
+
+---
+
 ## 📄 License
 Distributed under the MIT License. See `LICENSE` for more information.
 
