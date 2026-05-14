@@ -22,6 +22,54 @@ HealthCare Plus solves these issues by providing a **unified ecosystem**:
 
 ---
 
+## 🗺 Master Project Ecosystem (Full Overview)
+
+```mermaid
+graph TD
+    %% Global Styles
+    classDef devops fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#92400e
+    classDef frontend fill:#e0e7ff,stroke:#4f46e5,stroke-width:2px,color:#3730a3
+    classDef backend fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#065f46
+    classDef data fill:#f3e8ff,stroke:#9333ea,stroke-width:2px,color:#6b21a8
+    classDef external fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#991b1b
+
+    subgraph "🚀 CI/CD & DEVOPS PIPELINE"
+        DP[Developer Push] --> GH[GitHub Repository]
+        GH -->|Webhook| JK[Jenkins Master]
+        JK -->|Build & Test| MVN[Maven/NPM Build]
+        MVN -->|Containerize| DK[Docker Image]
+        DK -->|Push| REG[Docker Registry]
+        REG -->|Trigger| AN[Ansible Playbook]
+        AN -->|Provision| K8S[Kubernetes Cluster]
+    end
+
+    subgraph "🌐 LIVE APPLICATION ARCHITECTURE"
+        K8S -->|Host| LB[Load Balancer / Ingress]
+        LB -->|Route| FE[React Frontend - Vite]
+        LB -->|Route| BE[Spring Boot Backend]
+        
+        FE <-->|JSON REST API| BE
+        FE <-->|WebSocket STOMP| BE
+    end
+
+    subgraph "📊 DATA & EXTERNAL SERVICES"
+        BE <-->|JPA/Hibernate| SQL[(MySQL Database)]
+        FE -->|OAuth2| GF[Google Fit API]
+        GF -->|Fitness Data| BE
+    end
+
+    %% Applying Classes
+    class DP,GH,JK,MVN,DK,REG,AN,K8S devops
+    class FE,LB frontend
+    class BE backend
+    class SQL,GF data
+    class external external
+```
+
+> **The Full Lifecycle**: Every code improvement flows through an automated pipeline (Yellow). The React SPA (Blue) communicates with the Spring Boot engine (Green) via REST and WebSockets. Data is stored in MySQL (Purple), and health metrics are synced via Google Fit (Red).
+
+---
+
 ## 🔄 System Workflow
 
 ```mermaid
