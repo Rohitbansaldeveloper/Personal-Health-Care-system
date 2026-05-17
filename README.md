@@ -161,6 +161,17 @@ The infrastructure is powered by an industry-standard DevOps toolchain:
 - **Kubernetes (The Manager)**: Handles the production environment. If a part of the app crashes, K8s automatically restarts it. It also handles scaling and ensures the application is always highly available to patients and doctors.
 - **Ansible (The Automation)**: Automates the setup of our infrastructure. Instead of manually configuring servers, Ansible playbooks are used to deploy Kubernetes resources and configure the production environment in a predictable, repeatable way.
 
+### ☸️ Kubernetes Deployment Deep Dive
+
+The deployment to Kubernetes is fully automated via the Jenkins pipeline (`Jenkinsfile`) and defined in the `k8s/` directory. Here is how it functions:
+
+1. **Containerization:** The Vite frontend and Spring Boot backend are built into distinct Docker images and pushed to Docker Hub during the CI phase.
+2. **Dynamic Manifest Injection:** Jenkins dynamically injects the new Docker image tags (using the Jenkins build ID) into the Kubernetes deployment manifests (`backend-deployment.yaml` and `frontend-deployment.yaml`).
+3. **Automated Rollouts:** Jenkins applies the updated manifests directly to the Kubernetes cluster using `kubectl`. Kubernetes recognizes the new image tags and executes a **Rolling Update**, ensuring zero-downtime deployments.
+4. **Advanced Infrastructure:**
+    - **Scalability:** A Horizontal Pod Autoscaler (`hpa.yaml`) automatically spins up additional pods during high traffic and scales down when idle.
+    - **Self-Healing & Observability:** The cluster utilizes an **ELK Stack** (`elk-stack.yaml`) for centralized logging and **HashiCorp Vault** (`vault.yaml`) for secure secret injection. Crashed pods are automatically restarted by the Kubernetes control plane.
+
 ---
 
 ## 🛠 Tech Stack & Component Focus
