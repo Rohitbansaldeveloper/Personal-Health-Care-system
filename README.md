@@ -6,7 +6,7 @@ HealthCare Plus is a premium, full-stack health management platform designed wit
 
 ## 🎯 Project Philosophy & Problem Statement
 
-### The Problem
+### The Problem .
 Traditional healthcare systems often suffer from:
 - **Fragmented Data**: Patient records, activity logs, and doctor communications are scattered across different platforms.
 - **Manual Tracking**: Patients struggle to manually log daily health metrics like steps and exercise, leading to inconsistent data.
