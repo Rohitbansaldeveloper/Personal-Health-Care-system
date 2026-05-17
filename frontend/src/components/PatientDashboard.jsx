@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Upload, MessageCircle, Activity, Send, FileText, LogOut, Smartphone, Watch } from 'lucide-react';
+import { Calendar, Upload, MessageCircle, Activity, Send, FileText, LogOut, Smartphone, Watch, Heart, Moon, Zap, Droplet } from 'lucide-react';
 import axios from 'axios';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -19,7 +19,19 @@ export default function PatientDashboard() {
   const [records, setRecords] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [isSyncingFit, setIsSyncingFit] = useState(null);
-  const [newActivity, setNewActivity] = useState({ date: new Date().toISOString().split('T')[0], steps: 0, exerciseHours: 0, waterGlasses: 0 });
+  const [chartMetricGroup, setChartMetricGroup] = useState('activity');
+  const [newActivity, setNewActivity] = useState({
+    date: new Date().toISOString().split('T')[0],
+    steps: 0,
+    exerciseHours: 0,
+    waterGlasses: 0,
+    heartRate: 72,
+    bloodPressureSystolic: 120,
+    bloodPressureDiastolic: 80,
+    sleepHours: 7.5,
+    stressLevel: 25,
+    spo2: 98
+  });
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [stompClient, setStompClient] = useState(null);
@@ -180,7 +192,13 @@ export default function PatientDashboard() {
         activityDate: newActivity.date,
         steps: newActivity.steps,
         exerciseHours: newActivity.exerciseHours,
-        waterGlasses: newActivity.waterGlasses
+        waterGlasses: newActivity.waterGlasses,
+        heartRate: newActivity.heartRate,
+        bloodPressureSystolic: newActivity.bloodPressureSystolic,
+        bloodPressureDiastolic: newActivity.bloodPressureDiastolic,
+        sleepHours: newActivity.sleepHours,
+        stressLevel: newActivity.stressLevel,
+        spo2: newActivity.spo2
       });
       // Ensure the chart sorts properly by recreating the array
       setActivities([...activities, response.data].sort((a, b) => new Date(a.activityDate) - new Date(b.activityDate)));
@@ -206,7 +224,13 @@ export default function PatientDashboard() {
           ...newActivity,
           steps: Math.floor(Math.random() * (12000 - 6000) + 6000), 
           exerciseHours: +(Math.random() * 1.5 + 0.5).toFixed(1), 
-          waterGlasses: +(Math.random() * 2 + 1).toFixed(1)
+          waterGlasses: +(Math.random() * 2 + 1).toFixed(1),
+          heartRate: Math.floor(Math.random() * (90 - 65) + 65), // 65-90 bpm
+          bloodPressureSystolic: Math.floor(Math.random() * (130 - 110) + 110), // 110-130 mmHg
+          bloodPressureDiastolic: Math.floor(Math.random() * (85 - 70) + 70), // 70-85 mmHg
+          sleepHours: +(Math.random() * 3 + 6).toFixed(1), // 6-9 hrs
+          stressLevel: Math.floor(Math.random() * 40 + 10), // 10-50 stress index
+          spo2: Math.floor(Math.random() * (100 - 96) + 96) // 96-100% SpO2
         });
         setIsSyncingFit(null);
         alert('Successfully fetched and synced your latest data from Google Fit!');
@@ -234,11 +258,23 @@ export default function PatientDashboard() {
           ...newActivity,
           steps: Math.floor(Math.random() * (12000 - 4000) + 4000), 
           exerciseHours: +(Math.random() * 2).toFixed(1), 
-          waterGlasses: +(Math.random() * 3 + 1).toFixed(1)
+          waterGlasses: +(Math.random() * 3 + 1).toFixed(1),
+          heartRate: Math.floor(Math.random() * (95 - 60) + 60), 
+          bloodPressureSystolic: Math.floor(Math.random() * (135 - 115) + 115), 
+          bloodPressureDiastolic: Math.floor(Math.random() * (88 - 75) + 75), 
+          sleepHours: +(Math.random() * 4 + 5.5).toFixed(1), 
+          stressLevel: Math.floor(Math.random() * 50 + 5), 
+          spo2: Math.floor(Math.random() * (100 - 95) + 95)
         });
         setIsSyncingFit(null);
       }, 2000);
     }
+  };
+
+  const getLatestMetric = (metricKey, fallback = '-') => {
+    if (!activities || activities.length === 0) return fallback;
+    const latest = activities[activities.length - 1];
+    return latest[metricKey] !== undefined && latest[metricKey] !== null ? latest[metricKey] : fallback;
   };
 
   if (!user) return null;
@@ -430,6 +466,61 @@ export default function PatientDashboard() {
           {activeTab === 'activity' && (
             <div>
               <h2 className="card-title" style={{ marginBottom: '1.5rem' }}><Activity size={24} style={{ color: 'var(--primary)' }}/> Activity Tracking</h2>
+
+              {/* Samsung Galaxy Watch Health Status Cards */}
+              <div className="grid mb-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
+                <div style={{ background: 'rgba(239, 68, 68, 0.08)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(239, 68, 68, 0.2)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(239, 68, 68, 0.2)', padding: '0.75rem', borderRadius: '50%', color: '#ef4444', display: 'flex' }}>
+                    <Heart size={24} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: '#fca5a5', display: 'block' }}>Heart Rate</span>
+                    <strong style={{ fontSize: '1.4rem', color: '#fecaca' }}>{getLatestMetric('heartRate', '72')} <span style={{ fontSize: '0.85rem', fontWeight: 'normal' }}>BPM</span></strong>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(59, 130, 246, 0.08)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(59, 130, 246, 0.2)', padding: '0.75rem', borderRadius: '50%', color: '#3b82f6', display: 'flex' }}>
+                    <Activity size={24} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: '#93c5fd', display: 'block' }}>Blood Pressure</span>
+                    <strong style={{ fontSize: '1.2rem', color: '#dbeafe' }}>
+                      {getLatestMetric('bloodPressureSystolic', '120')}/{getLatestMetric('bloodPressureDiastolic', '80')} <span style={{ fontSize: '0.75rem', fontWeight: 'normal' }}>mmHg</span>
+                    </strong>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(16, 185, 129, 0.2)', padding: '0.75rem', borderRadius: '50%', color: '#10b981', display: 'flex' }}>
+                    <Droplet size={24} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: '#6ee7b7', display: 'block' }}>Blood Oxygen</span>
+                    <strong style={{ fontSize: '1.4rem', color: '#a7f3d0' }}>{getLatestMetric('spo2', '98')}<span style={{ fontSize: '0.85rem', fontWeight: 'normal' }}>% SpO2</span></strong>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(168, 85, 247, 0.08)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(168, 85, 247, 0.2)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(168, 85, 247, 0.2)', padding: '0.75rem', borderRadius: '50%', color: '#a855f7', display: 'flex' }}>
+                    <Moon size={24} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: '#d8b4fe', display: 'block' }}>Sleep Time</span>
+                    <strong style={{ fontSize: '1.4rem', color: '#f3e8ff' }}>{getLatestMetric('sleepHours', '7.2')} <span style={{ fontSize: '0.85rem', fontWeight: 'normal' }}>Hrs</span></strong>
+                  </div>
+                </div>
+
+                <div style={{ background: 'rgba(245, 158, 11, 0.08)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(245, 158, 11, 0.2)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div style={{ background: 'rgba(245, 158, 11, 0.2)', padding: '0.75rem', borderRadius: '50%', color: '#f59e0b', display: 'flex' }}>
+                    <Zap size={24} />
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', color: '#fde047', display: 'block' }}>Stress Level</span>
+                    <strong style={{ fontSize: '1.4rem', color: '#fef9c3' }}>{getLatestMetric('stressLevel', '25')}<span style={{ fontSize: '0.85rem', fontWeight: 'normal' }}>/100</span></strong>
+                  </div>
+                </div>
+              </div>
               
               <div className="grid grid-cols-2" style={{ gap: '1.5rem', marginBottom: '2rem' }}>
                 <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
@@ -480,7 +571,34 @@ export default function PatientDashboard() {
                       <label className="form-label">Water (Liters)</label>
                       <input type="number" step="0.1" className="form-control" required value={newActivity.waterGlasses} onChange={e => setNewActivity({...newActivity, waterGlasses: parseFloat(e.target.value) || 0})} placeholder="e.g. 2.5" />
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
+
+                    {/* Galaxy Watch Specific Forms */}
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Heart Rate (BPM)</label>
+                      <input type="number" className="form-control" value={newActivity.heartRate} onChange={e => setNewActivity({...newActivity, heartRate: parseInt(e.target.value) || 0})} placeholder="e.g. 72" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">BP (Systolic / Diastolic)</label>
+                      <div className="flex gap-2">
+                        <input type="number" className="form-control" style={{ minWidth: 0 }} value={newActivity.bloodPressureSystolic} onChange={e => setNewActivity({...newActivity, bloodPressureSystolic: parseInt(e.target.value) || 0})} placeholder="Sys (120)" />
+                        <span style={{ alignSelf: 'center' }}>/</span>
+                        <input type="number" className="form-control" style={{ minWidth: 0 }} value={newActivity.bloodPressureDiastolic} onChange={e => setNewActivity({...newActivity, bloodPressureDiastolic: parseInt(e.target.value) || 0})} placeholder="Dia (80)" />
+                      </div>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Sleep (Hours)</label>
+                      <input type="number" step="0.1" className="form-control" value={newActivity.sleepHours} onChange={e => setNewActivity({...newActivity, sleepHours: parseFloat(e.target.value) || 0})} placeholder="e.g. 7.5" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Stress Level (1-100)</label>
+                      <input type="number" className="form-control" value={newActivity.stressLevel} onChange={e => setNewActivity({...newActivity, stressLevel: parseInt(e.target.value) || 0})} placeholder="e.g. 25" />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0, gridColumn: '1 / -1' }}>
+                      <label className="form-label">Blood Oxygen SpO2 (%)</label>
+                      <input type="number" className="form-control" value={newActivity.spo2} onChange={e => setNewActivity({...newActivity, spo2: parseInt(e.target.value) || 0})} placeholder="e.g. 98" />
+                    </div>
+                    
+                    <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
                       <button type="submit" className="btn btn-primary w-full">Save to Database</button>
                     </div>
                   </form>
@@ -488,21 +606,60 @@ export default function PatientDashboard() {
               </div>
 
               {activities.length > 0 ? (
-                <div style={{ height: '350px', width: '100%', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                  <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', textAlign: 'center' }}>Health Improvement Graph</h3>
-                  <ResponsiveContainer width="100%" height="85%">
-                    <LineChart data={activities} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                      <XAxis dataKey="activityDate" stroke="#94a3b8" />
-                      <YAxis yAxisId="left" stroke="#818cf8" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#34d399" />
-                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
-                      <Legend />
-                      <Line yAxisId="left" type="monotone" dataKey="steps" stroke="#818cf8" strokeWidth={3} name="Steps" />
-                      <Line yAxisId="right" type="monotone" dataKey="exerciseHours" stroke="#34d399" strokeWidth={3} name="Exercise (Hrs)" />
-                      <Line yAxisId="right" type="monotone" dataKey="waterGlasses" stroke="#f472b6" strokeWidth={3} name="Water (Liters)" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 style={{ fontSize: '1.1rem', margin: 0 }}>Health Analytics</h3>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setChartMetricGroup('activity')}
+                        className={`btn ${chartMetricGroup === 'activity' ? 'btn-primary' : 'btn-outline'}`}
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', border: chartMetricGroup === 'activity' ? 'none' : '' }}
+                      >
+                        Daily Activity
+                      </button>
+                      <button 
+                        onClick={() => setChartMetricGroup('vitals')}
+                        className={`btn ${chartMetricGroup === 'vitals' ? 'btn-primary' : 'btn-outline'}`}
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', border: chartMetricGroup === 'vitals' ? 'none' : '' }}
+                      >
+                        Galaxy Watch Vitals
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div style={{ height: '350px', width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="90%">
+                      <LineChart data={activities} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                        <XAxis dataKey="activityDate" stroke="#94a3b8" />
+                        
+                        {chartMetricGroup === 'activity' ? (
+                          <>
+                            <YAxis yAxisId="left" stroke="#818cf8" />
+                            <YAxis yAxisId="right" orientation="right" stroke="#34d399" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
+                            <Legend />
+                            <Line yAxisId="left" type="monotone" dataKey="steps" stroke="#818cf8" strokeWidth={3} name="Steps" />
+                            <Line yAxisId="right" type="monotone" dataKey="exerciseHours" stroke="#34d399" strokeWidth={3} name="Exercise (Hrs)" />
+                            <Line yAxisId="right" type="monotone" dataKey="waterGlasses" stroke="#f472b6" strokeWidth={3} name="Water (Liters)" />
+                          </>
+                        ) : (
+                          <>
+                            <YAxis yAxisId="left" stroke="#f87171" domain={[40, 160]} />
+                            <YAxis yAxisId="right" orientation="right" stroke="#a78bfa" domain={[0, 100]} />
+                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)' }} />
+                            <Legend />
+                            <Line yAxisId="left" type="monotone" dataKey="heartRate" stroke="#f87171" strokeWidth={3} name="Heart Rate (BPM)" />
+                            <Line yAxisId="left" type="monotone" dataKey="bloodPressureSystolic" stroke="#60a5fa" strokeWidth={2} name="BP Systolic" />
+                            <Line yAxisId="left" type="monotone" dataKey="bloodPressureDiastolic" stroke="#3b82f6" strokeWidth={2} name="BP Diastolic" strokeDasharray="5 5" />
+                            <Line yAxisId="right" type="monotone" dataKey="sleepHours" stroke="#c084fc" strokeWidth={3} name="Sleep (Hrs)" />
+                            <Line yAxisId="right" type="monotone" dataKey="stressLevel" stroke="#fbbf24" strokeWidth={3} name="Stress Level" />
+                            <Line yAxisId="right" type="monotone" dataKey="spo2" stroke="#34d399" strokeWidth={3} name="Oxygen (SpO2 %)" />
+                          </>
+                        )}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               ) : (
                 <p className="text-muted text-center" style={{ padding: '2rem 0' }}>No activity logged yet. Start tracking to see your improvement graph!</p>

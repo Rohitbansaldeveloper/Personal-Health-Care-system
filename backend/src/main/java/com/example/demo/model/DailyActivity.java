@@ -24,4 +24,17 @@ public class DailyActivity {
     private Double exerciseHours;
 
     private Integer waterGlasses;
+
+    // Samsung Galaxy Watch health metrics
+    private Integer heartRate;
+
+    private Integer bloodPressureSystolic;
+
+    private Integer bloodPressureDiastolic;
+
+    private Double sleepHours;
+
+    private Integer stressLevel; // Scale of 1 to 100
+
+    private Integer spo2; // Blood oxygen percentage (e.g. 95-100)
 }
