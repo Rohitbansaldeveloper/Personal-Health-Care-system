@@ -156,7 +156,7 @@ graph LR
 
 The infrastructure is powered by an industry-standard DevOps toolchain:
 
-- **Jenkins (The Orchestrator)**: Acts as the "brain" of the operation. It automatically detects code changes on GitHub, triggers the build process, runs tests, and coordinates between Docker, Ansible, and Kubernetes.
+- **Jenkins (The Orchestrator)**: Acts as the "brain" of the operation. It automatically detects code changes on GitHub via a webhook (exposed using **ngrok** to bridge the local server), triggers the build process, runs tests, and coordinates between Docker, Ansible, and Kubernetes.
 - **Docker (The Packaging)**: Ensures "it works on my machine" everywhere. Every part of the application (Frontend & Backend) is packaged into a lightweight, portable container that includes all its dependencies.
 - **Kubernetes (The Manager)**: Handles the production environment. If a part of the app crashes, K8s automatically restarts it. It also handles scaling and ensures the application is always highly available to patients and doctors.
 - **Ansible (The Automation)**: Automates the setup of our infrastructure. Instead of manually configuring servers, Ansible playbooks are used to deploy Kubernetes resources and configure the production environment in a predictable, repeatable way.
