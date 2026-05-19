@@ -174,27 +174,27 @@ graph TD
     User((User Browser)) -->|Port 5173| F_SVC
     User -->|Port 8081| B_SVC
 
-    subgraph "☸️ Production Kubernetes Cluster (Default Namespace)"
+    subgraph Cluster [Production Kubernetes Cluster]
         
-        subgraph "Ingress & Routing (LoadBalancers)"
-            F_SVC[Frontend Service\nType: LoadBalancer]:::lb
-            B_SVC[Backend Service\nType: LoadBalancer]:::lb
-            K_SVC[Kibana Service\nType: LoadBalancer]:::lb
+        subgraph Ingress [Ingress & Routing]
+            F_SVC[Frontend Service<br/>Type: LoadBalancer]:::lb
+            B_SVC[Backend Service<br/>Type: LoadBalancer]:::lb
+            K_SVC[Kibana Service<br/>Type: LoadBalancer]:::lb
         end
 
-        subgraph "Application Pods (Managed by HPA)"
-            F_POD(Frontend Pods\nReact + Vite):::pod
-            B_POD(Backend Pods\nSpring Boot):::pod
+        subgraph Pods [Application Pods]
+            F_POD(Frontend Pods<br/>React + Vite):::pod
+            B_POD(Backend Pods<br/>Spring Boot):::pod
         end
 
-        subgraph "Internal Services (ClusterIP)"
+        subgraph SVC [Internal Services]
             DB_SVC[MySQL Service]:::svc
             LS_SVC[Logstash Service]:::svc
             ES_SVC[ElasticSearch Service]:::svc
             V_SVC[Vault Service]:::svc
         end
         
-        subgraph "Data & Security Pods"
+        subgraph Data [Data & Security]
             DB_POD[(MySQL Pod)]:::db
             ES_POD[(ElasticSearch Pod)]:::db
             LS_POD(Logstash Pod):::pod
@@ -208,9 +208,9 @@ graph TD
         
         F_POD -->|JSON API / WS| B_SVC
         
-        B_POD -->|JDBC (3306)| DB_SVC
-        B_POD -->|Logs (5044)| LS_SVC
-        B_POD -->|Secrets| V_SVC
+        B_POD -->|JDBC 3306| DB_SVC
+        B_POD -->|Logs 5044| LS_SVC
+        B_POD -->|Secrets 8200| V_SVC
 
         DB_SVC --> DB_POD
         LS_SVC --> LS_POD
