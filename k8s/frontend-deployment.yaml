@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: frontend
-  namespace: healthcare-ns
+
 spec:
   replicas: 2
   strategy:
@@ -36,7 +36,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: frontend-service
-  namespace: healthcare-ns
+
 spec:
   type: LoadBalancer
   selector:

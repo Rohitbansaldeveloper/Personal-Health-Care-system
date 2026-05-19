@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: elasticsearch
-  namespace: healthcare-ns
+
 spec:
   replicas: 1
   selector:
@@ -28,7 +28,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: elasticsearch
-  namespace: healthcare-ns
+
 spec:
   selector:
     app: elasticsearch
@@ -39,7 +39,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: logstash
-  namespace: healthcare-ns
+
 spec:
   replicas: 1
   selector:
@@ -60,7 +60,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: logstash
-  namespace: healthcare-ns
+
 spec:
   selector:
     app: logstash
@@ -71,7 +71,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kibana
-  namespace: healthcare-ns
+
 spec:
   replicas: 1
   selector:
@@ -95,7 +95,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kibana
-  namespace: healthcare-ns
+
 spec:
   type: LoadBalancer
   selector:

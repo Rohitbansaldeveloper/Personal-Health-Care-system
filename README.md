@@ -163,6 +163,65 @@ The infrastructure is powered by an industry-standard DevOps toolchain:
 
 ### ☸️ Kubernetes Deployment Deep Dive
 
+```mermaid
+graph TD
+    classDef lb fill:#fca5a5,stroke:#ef4444,stroke-width:2px,color:#7f1d1d
+    classDef pod fill:#6ee7b7,stroke:#10b981,stroke-width:2px,color:#064e3b
+    classDef svc fill:#93c5fd,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a
+    classDef db fill:#c4b5fd,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95
+    classDef ext fill:#fde047,stroke:#eab308,stroke-width:2px,color:#713f12
+
+    User((User Browser)) -->|Port 5173| F_SVC
+    User -->|Port 8081| B_SVC
+
+    subgraph "☸️ Production Kubernetes Cluster (Default Namespace)"
+        
+        subgraph "Ingress & Routing (LoadBalancers)"
+            F_SVC[Frontend Service\nType: LoadBalancer]:::lb
+            B_SVC[Backend Service\nType: LoadBalancer]:::lb
+            K_SVC[Kibana Service\nType: LoadBalancer]:::lb
+        end
+
+        subgraph "Application Pods (Managed by HPA)"
+            F_POD(Frontend Pods\nReact + Vite):::pod
+            B_POD(Backend Pods\nSpring Boot):::pod
+        end
+
+        subgraph "Internal Services (ClusterIP)"
+            DB_SVC[MySQL Service]:::svc
+            LS_SVC[Logstash Service]:::svc
+            ES_SVC[ElasticSearch Service]:::svc
+            V_SVC[Vault Service]:::svc
+        end
+        
+        subgraph "Data & Security Pods"
+            DB_POD[(MySQL Pod)]:::db
+            ES_POD[(ElasticSearch Pod)]:::db
+            LS_POD(Logstash Pod):::pod
+            K_POD(Kibana Pod):::pod
+            V_POD(HashiCorp Vault Pod):::ext
+        end
+
+        F_SVC -->|Routes to| F_POD
+        B_SVC -->|Routes to| B_POD
+        K_SVC -->|Routes to| K_POD
+        
+        F_POD -->|JSON API / WS| B_SVC
+        
+        B_POD -->|JDBC (3306)| DB_SVC
+        B_POD -->|Logs (5044)| LS_SVC
+        B_POD -->|Secrets| V_SVC
+
+        DB_SVC --> DB_POD
+        LS_SVC --> LS_POD
+        ES_SVC --> ES_POD
+        V_SVC --> V_POD
+        
+        LS_POD -->|Pipelines| ES_SVC
+        K_POD -->|Queries| ES_SVC
+    end
+```
+
 The deployment to Kubernetes is fully automated via the Jenkins pipeline (`Jenkinsfile`) and defined in the `k8s/` directory. Here is how it functions:
 
 1. **Containerization:** The Vite frontend and Spring Boot backend are built into distinct Docker images and pushed to Docker Hub during the CI phase.
