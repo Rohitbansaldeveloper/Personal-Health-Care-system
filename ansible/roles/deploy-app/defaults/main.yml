@@ -1,0 +1,4 @@
+---
+# defaults file for deploy-app
+backend_image: rohitbansal2113/healthcare-backend:latest
+frontend_image: rohitbansal2113/healthcare-frontend:latest

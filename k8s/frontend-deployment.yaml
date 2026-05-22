@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: rohitbansal2113/healthcare-frontend:latest
+        image: __FRONTEND_IMAGE__
         imagePullPolicy: Always
         resources:
           requests:

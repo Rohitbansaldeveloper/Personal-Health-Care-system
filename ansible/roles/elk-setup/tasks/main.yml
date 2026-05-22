@@ -1,0 +1,7 @@
+---
+# tasks file for elk-setup
+- name: Apply ELK Stack (Elasticsearch, Logstash, Kibana)
+  k8s:
+    state: present
+    namespace: "{{ namespace }}"
+    src: ../../../k8s/elk-stack.yaml

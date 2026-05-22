@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: rohitbansal2113/healthcare-backend:latest
+        image: __BACKEND_IMAGE__
         imagePullPolicy: Always
         resources:
           requests:

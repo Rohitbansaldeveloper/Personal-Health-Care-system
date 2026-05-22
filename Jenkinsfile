@@ -47,24 +47,9 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
                     sh '''
-                    # Apply secrets from Vault or directly
-                    # kubectl apply -f k8s/namespace.yaml
-                    
-                    # Convert WSL workspace path to Windows format so powershell can read the files
-                    WIN_WORKSPACE=$(wslpath -w $PWD)
-                    
-                    # Apply MySQL
-                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\mysql-deployment.yaml"
-                    
-                    # Apply Backend & Frontend with updated image tags
-                    sed -i "s|__BACKEND_IMAGE__|${BACKEND_IMAGE}:${TAG}|g" k8s/backend-deployment.yaml
-                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\backend-deployment.yaml"
-                    
-                    sed -i "s|__FRONTEND_IMAGE__|${FRONTEND_IMAGE}:${TAG}|g" k8s/frontend-deployment.yaml
-                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\frontend-deployment.yaml"
-                    
-                    # Apply HPA for Scalability
-                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\hpa.yaml"
+                    # Run the Ansible playbook to provision and deploy everything
+                    ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+                      --extra-vars "namespace=healthcare-ns backend_image=${BACKEND_IMAGE}:${TAG} frontend_image=${FRONTEND_IMAGE}:${TAG}"
                     '''
                 }
             }
