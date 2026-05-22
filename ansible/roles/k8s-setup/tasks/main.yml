@@ -10,9 +10,9 @@
 - name: Apply MySQL secret
   k8s:
     state: present
-    src: ../../../k8s/mysql-deployment.yaml
+    src: ../k8s/mysql-deployment.yaml
 
 - name: Apply HPA for Scalability
   k8s:
     state: present
-    src: ../../../k8s/hpa.yaml
+    src: ../k8s/hpa.yaml

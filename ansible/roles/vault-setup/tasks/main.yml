@@ -4,4 +4,4 @@
   k8s:
     state: present
     namespace: "{{ namespace }}"
-    src: ../../../k8s/vault.yaml
+    src: ../k8s/vault.yaml

@@ -10,14 +10,14 @@
 
 - name: Copy backend deployment manifest with image replacement
   copy:
-    content: "{{ lookup('file', '../../../k8s/backend-deployment.yaml') | replace('__BACKEND_IMAGE__', backend_image) }}"
+    content: "{{ lookup('file', '../k8s/backend-deployment.yaml') | replace('__BACKEND_IMAGE__', backend_image) }}"
     dest: "{{ temp_deploy_dir.path }}/backend-deployment.yaml"
   delegate_to: localhost
   become: no
 
 - name: Copy frontend deployment manifest with image replacement
   copy:
-    content: "{{ lookup('file', '../../../k8s/frontend-deployment.yaml') | replace('__FRONTEND_IMAGE__', frontend_image) }}"
+    content: "{{ lookup('file', '../k8s/frontend-deployment.yaml') | replace('__FRONTEND_IMAGE__', frontend_image) }}"
     dest: "{{ temp_deploy_dir.path }}/frontend-deployment.yaml"
   delegate_to: localhost
   become: no
