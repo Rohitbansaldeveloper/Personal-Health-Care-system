@@ -10,9 +10,12 @@
 - name: Apply MySQL secret
   k8s:
     state: present
+    namespace: "{{ namespace }}"
     src: ../k8s/mysql-deployment.yaml
 
 - name: Apply HPA for Scalability
   k8s:
     state: present
+    namespace: "{{ namespace }}"
     src: ../k8s/hpa.yaml
+
