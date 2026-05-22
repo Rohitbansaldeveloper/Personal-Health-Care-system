@@ -47,6 +47,22 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
                     sh '''
+                    # Detect if running in WSL/Linux and attempt to use the host's current kubeconfig to get the active API server port
+                    HOST_KUBECONFIG=""
+                    for d in /mnt/c/Users/*; do
+                        if [ -f "$d/.kube/config" ]; then
+                            HOST_KUBECONFIG="$d/.kube/config"
+                            break
+                        fi
+                    done
+
+                    if [ -n "$HOST_KUBECONFIG" ]; then
+                        echo "Found active host kubeconfig at $HOST_KUBECONFIG. Using it to dynamic-patch connection port."
+                        export KUBECONFIG="$HOST_KUBECONFIG"
+                    else
+                        echo "Using Jenkins-provided KUBECONFIG credential fallback."
+                    fi
+
                     # Set up Python library dependencies for Ansible k8s module
                     if python3 -m venv venv; then
                         echo "Using virtual environment for python dependencies..."
