@@ -374,6 +374,7 @@ export default function DoctorDashboard() {
                                 <h4 style={{ fontWeight: '600', fontSize: '0.95rem' }}>{record.fileName}</h4>
                                 <p className="text-muted" style={{ fontSize: '0.8rem' }}>Uploaded: {new Date(record.uploadedAt).toLocaleDateString()}</p>
                               </div>
+                            </div>
                             <a href={record.fileUrl} download={record.fileName} className="btn btn-outline" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }}>Download Report</a>
                           </div>
                         ))}
@@ -391,7 +392,7 @@ export default function DoctorDashboard() {
                     ) : (
                       <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                          <thead>
+                           <thead>
                             <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', textAlign: 'left' }}>
                               <th style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Date</th>
                               <th style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Steps</th>
@@ -402,6 +403,17 @@ export default function DoctorDashboard() {
                               <th style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>SpO2</th>
                               <th style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Stress</th>
                               <th style={{ padding: '0.75rem', color: 'var(--text-muted)' }}>Sleep</th>
+                            </tr>
+                            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', textAlign: 'left', fontSize: '0.75rem', color: '#10b981' }}>
+                              <td style={{ padding: '0.5rem 0.75rem', fontStyle: 'italic', fontWeight: '500' }}>Normal Range</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>8k - 10k+</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>0.5h - 1.0h+</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>2.5 - 3.7 L</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>60 - 100</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>&lt;120 / &lt;80</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>95% - 100%</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>&lt;30</td>
+                              <td style={{ padding: '0.5rem 0.75rem', fontWeight: '500' }}>7.0 - 9.0h</td>
                             </tr>
                           </thead>
                           <tbody>
