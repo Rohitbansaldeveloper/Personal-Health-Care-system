@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Upload, MessageCircle, Activity, Send, FileText, LogOut, Smartphone, Watch, Heart, Moon, Zap, Droplet } from 'lucide-react';
 import axios from 'axios';
@@ -35,6 +35,12 @@ export default function PatientDashboard() {
   const [chatMessage, setChatMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [stompClient, setStompClient] = useState(null);
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const selectedDoctorRef = useRef(null);
+
+  useEffect(() => {
+    selectedDoctorRef.current = selectedDoctor;
+  }, [selectedDoctor]);
   const navigate = useNavigate();
 
   // Smart URL resolving for both local development and Kubernetes
@@ -71,6 +77,7 @@ export default function PatientDashboard() {
         setDoctors(res.data);
         if (res.data.length > 0) {
           setNewAppointment(prev => ({ ...prev, doctorId: res.data[0].id }));
+          setSelectedDoctor(res.data[0]);
         }
       })
       .catch(err => {
@@ -81,9 +88,18 @@ export default function PatientDashboard() {
     const client = new Client({
       webSocketFactory: () => new SockJS(`${baseUrl}/ws`),
       onConnect: () => {
-        client.subscribe(`/user/${parsedUser.id}/queue/messages`, (msg) => {
+        client.subscribe(`/topic/messages/${parsedUser.id}`, (msg) => {
           const newMessage = JSON.parse(msg.body);
-          setMessages(prev => [...prev, newMessage]);
+          setMessages(prev => {
+            // Prevent duplicate messages
+            if (prev.some(m => m.id === newMessage.id)) return prev;
+            
+            const activeDoc = selectedDoctorRef.current;
+            if (activeDoc && (newMessage.sender?.id === activeDoc.id || newMessage.receiver?.id === activeDoc.id)) {
+              return [...prev, newMessage];
+            }
+            return prev;
+          });
         });
       },
       debug: (str) => console.log(str)
@@ -92,20 +108,22 @@ export default function PatientDashboard() {
     client.activate();
     setStompClient(client);
 
-    // Load mock initial chat messages
-    const doctorId = 2; // For demonstration, default doctor ID
-    axios.get(`${baseUrl}/api/chat/${parsedUser.id}/${doctorId}`)
-      .then(res => {
-        if (Array.isArray(res.data)) {
-          setMessages(res.data);
-        }
-      })
-      .catch(err => console.log('Chat fetch issue (might be normal if empty):', err.message));
-
     return () => {
       if (client) client.deactivate();
     };
   }, [navigate]);
+
+  useEffect(() => {
+    if (activeTab === 'chat' && user && selectedDoctor) {
+      axios.get(`${baseUrl}/api/chat/${user.id}/${selectedDoctor.id}`)
+        .then(res => {
+          if (Array.isArray(res.data)) {
+            setMessages(res.data);
+          }
+        })
+        .catch(err => console.log('Chat fetch issue:', err.message));
+    }
+  }, [activeTab, user, selectedDoctor, baseUrl]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -137,12 +155,11 @@ export default function PatientDashboard() {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!chatMessage.trim() || !stompClient || !user) return;
+    if (!chatMessage.trim() || !stompClient || !user || !selectedDoctor) return;
 
-    const doctorId = 2; // Fixed doctor ID for demo purposes
     const messageObj = {
       senderId: user.id,
-      receiverId: doctorId,
+      receiverId: selectedDoctor.id,
       message: chatMessage
     };
 
@@ -151,13 +168,6 @@ export default function PatientDashboard() {
       body: JSON.stringify(messageObj)
     });
 
-    const optimisticMsg = {
-      id: Date.now(),
-      sender: { id: user.id },
-      message: chatMessage
-    };
-    
-    setMessages(prev => [...prev, optimisticMsg]);
     setChatMessage('');
   };
 
@@ -165,13 +175,15 @@ export default function PatientDashboard() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    // Simulate upload delay for security scan/processing
-    setTimeout(async () => {
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Url = event.target.result;
       try {
         const response = await axios.post(`${baseUrl}/api/records/`, {
           patient: { id: user.id },
           fileName: file.name,
-          fileUrl: `/uploads/${file.name}`,
+          fileUrl: base64Url,
           recordType: 'GENERAL_REPORT'
         });
         setRecords([...records, response.data]);
@@ -181,7 +193,8 @@ export default function PatientDashboard() {
       } finally {
         setUploading(false);
       }
-    }, 1500);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleLogActivity = async (e) => {
@@ -399,7 +412,24 @@ export default function PatientDashboard() {
 
           {activeTab === 'chat' && (
             <div>
-              <h2 className="card-title"><MessageCircle size={24} style={{ color: 'var(--primary)' }}/> Doctor Consultation</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="card-title" style={{ marginBottom: 0, border: 'none' }}><MessageCircle size={24} style={{ color: 'var(--primary)' }}/> Doctor Consultation</h2>
+                {doctors.length > 0 && (
+                  <select 
+                    className="form-control" 
+                    style={{ width: 'auto', minWidth: '200px' }}
+                    value={selectedDoctor?.id || ''}
+                    onChange={(e) => {
+                      const doc = doctors.find(d => d.id === parseInt(e.target.value));
+                      setSelectedDoctor(doc);
+                    }}
+                  >
+                    {doctors.map(doc => (
+                      <option key={doc.id} value={doc.id}>Dr. {doc.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <div className="chat-container">
                 <div className="chat-messages">
                   {messages.length === 0 ? (
@@ -562,20 +592,24 @@ export default function PatientDashboard() {
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Steps</label>
                       <input type="number" className="form-control" required value={newActivity.steps} onChange={e => setNewActivity({...newActivity, steps: parseInt(e.target.value) || 0})} />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: 8,000 - 10,000+</span>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Exercise (Hours)</label>
                       <input type="number" step="0.1" className="form-control" required value={newActivity.exerciseHours} onChange={e => setNewActivity({...newActivity, exerciseHours: parseFloat(e.target.value) || 0})} />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: 0.5 - 1.0+ Hrs/day</span>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Water (Liters)</label>
                       <input type="number" step="0.1" className="form-control" required value={newActivity.waterGlasses} onChange={e => setNewActivity({...newActivity, waterGlasses: parseFloat(e.target.value) || 0})} placeholder="e.g. 2.5" />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: 2.5 - 3.7 Liters</span>
                     </div>
 
                     {/* Galaxy Watch Specific Forms */}
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Heart Rate (BPM)</label>
                       <input type="number" className="form-control" value={newActivity.heartRate} onChange={e => setNewActivity({...newActivity, heartRate: parseInt(e.target.value) || 0})} placeholder="e.g. 72" />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: 60 - 100 BPM</span>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">BP (Systolic / Diastolic)</label>
@@ -584,18 +618,22 @@ export default function PatientDashboard() {
                         <span style={{ alignSelf: 'center' }}>/</span>
                         <input type="number" className="form-control" style={{ minWidth: 0 }} value={newActivity.bloodPressureDiastolic} onChange={e => setNewActivity({...newActivity, bloodPressureDiastolic: parseInt(e.target.value) || 0})} placeholder="Dia (80)" />
                       </div>
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: &lt;120 / &lt;80 mmHg</span>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Sleep (Hours)</label>
                       <input type="number" step="0.1" className="form-control" value={newActivity.sleepHours} onChange={e => setNewActivity({...newActivity, sleepHours: parseFloat(e.target.value) || 0})} placeholder="e.g. 7.5" />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: 7.0 - 9.0 Hours</span>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label">Stress Level (1-100)</label>
                       <input type="number" className="form-control" value={newActivity.stressLevel} onChange={e => setNewActivity({...newActivity, stressLevel: parseInt(e.target.value) || 0})} placeholder="e.g. 25" />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: &lt;30 (Low Stress)</span>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0, gridColumn: '1 / -1' }}>
                       <label className="form-label">Blood Oxygen SpO2 (%)</label>
                       <input type="number" className="form-control" value={newActivity.spo2} onChange={e => setNewActivity({...newActivity, spo2: parseInt(e.target.value) || 0})} placeholder="e.g. 98" />
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', display: 'block', marginTop: '0.25rem', fontWeight: '500' }}>Normal: 95 - 100%</span>
                     </div>
                     
                     <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>

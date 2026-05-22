@@ -47,4 +47,9 @@ public class AuthController {
     public ResponseEntity<List<User>> getDoctors() {
         return ResponseEntity.ok(userRepository.findByRoleIgnoreCase("DOCTOR"));
     }
+
+    @GetMapping("/patients")
+    public ResponseEntity<List<User>> getPatients() {
+        return ResponseEntity.ok(userRepository.findByRoleIgnoreCase("PATIENT"));
+    }
 }

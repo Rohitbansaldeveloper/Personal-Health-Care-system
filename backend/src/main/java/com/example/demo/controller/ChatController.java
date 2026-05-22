@@ -52,12 +52,12 @@ public class ChatController {
             
             ChatMessage savedMessage = chatRepository.save(chatMessage);
             
-            // Send to sender's queue and receiver's queue
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(chatMessageDTO.getReceiverId()), "/queue/messages", savedMessage
+            // Send to sender's topic and receiver's topic
+            messagingTemplate.convertAndSend(
+                    "/topic/messages/" + chatMessageDTO.getReceiverId(), savedMessage
             );
-            messagingTemplate.convertAndSendToUser(
-                    String.valueOf(chatMessageDTO.getSenderId()), "/queue/messages", savedMessage
+            messagingTemplate.convertAndSend(
+                    "/topic/messages/" + chatMessageDTO.getSenderId(), savedMessage
             );
         }
     }
