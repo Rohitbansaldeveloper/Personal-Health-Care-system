@@ -47,8 +47,21 @@ pipeline {
             steps {
                 withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
                     sh '''
-                    # Run the Ansible playbook to provision and deploy everything
+                    # Set up Python library dependencies for Ansible k8s module
+                    if python3 -m venv venv; then
+                        echo "Using virtual environment for python dependencies..."
+                        venv/bin/pip install --upgrade pip
+                        venv/bin/pip install kubernetes
+                        PYTHON_INTERP="$(pwd)/venv/bin/python"
+                    else
+                        echo "python3-venv not available. Falling back to system pip install..."
+                        pip3 install --user kubernetes --break-system-packages || pip install --user kubernetes || true
+                        PYTHON_INTERP="python3"
+                    fi
+
+                    # Run the Ansible playbook using the setup Python interpreter
                     ansible-playbook -i ansible/inventory.ini ansible/playbook.yml \
+                      -e "ansible_python_interpreter=${PYTHON_INTERP}" \
                       --extra-vars "namespace=healthcare-ns backend_image=${BACKEND_IMAGE}:${TAG} frontend_image=${FRONTEND_IMAGE}:${TAG}"
                     '''
                 }
