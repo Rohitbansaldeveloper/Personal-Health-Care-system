@@ -48,7 +48,7 @@ pipeline {
                 withCredentials([file(credentialsId: "${KUBECONFIG_CREDENTIALS_ID}", variable: 'KUBECONFIG')]) {
                     sh '''
                     # Apply secrets from Vault or directly
-                    kubectl apply -f k8s/namespace.yaml
+                    # kubectl apply -f k8s/namespace.yaml
                     
                     # Apply MySQL
                     kubectl apply -f k8s/mysql-deployment.yaml
