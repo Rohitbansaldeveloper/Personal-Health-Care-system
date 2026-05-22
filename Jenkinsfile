@@ -50,6 +50,9 @@ pipeline {
                     # Apply secrets from Vault or directly
                     # kubectl apply -f k8s/namespace.yaml
                     
+                    # Print cluster info to verify connection
+                    kubectl cluster-info || true
+                    
                     # Apply MySQL
                     kubectl apply -f k8s/mysql-deployment.yaml
                     
