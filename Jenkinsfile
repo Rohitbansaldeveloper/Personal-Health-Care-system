@@ -50,18 +50,21 @@ pipeline {
                     # Apply secrets from Vault or directly
                     # kubectl apply -f k8s/namespace.yaml
                     
+                    # Convert WSL workspace path to Windows format so powershell can read the files
+                    WIN_WORKSPACE=$(wslpath -w $PWD)
+                    
                     # Apply MySQL
-                    kubectl apply -f k8s/mysql-deployment.yaml
+                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\mysql-deployment.yaml"
                     
                     # Apply Backend & Frontend with updated image tags
                     sed -i "s|__BACKEND_IMAGE__|${BACKEND_IMAGE}:${TAG}|g" k8s/backend-deployment.yaml
-                    kubectl apply -f k8s/backend-deployment.yaml
+                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\backend-deployment.yaml"
                     
                     sed -i "s|__FRONTEND_IMAGE__|${FRONTEND_IMAGE}:${TAG}|g" k8s/frontend-deployment.yaml
-                    kubectl apply -f k8s/frontend-deployment.yaml
+                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\frontend-deployment.yaml"
                     
                     # Apply HPA for Scalability
-                    kubectl apply -f k8s/hpa.yaml
+                    powershell.exe -Command "kubectl apply -f $WIN_WORKSPACE\\k8s\\hpa.yaml"
                     '''
                 }
             }
