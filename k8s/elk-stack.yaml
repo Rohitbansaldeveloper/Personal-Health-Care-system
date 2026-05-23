@@ -40,6 +40,15 @@ spec:
           value: single-node
         - name: xpack.security.enabled
           value: "false"
+        - name: ES_JAVA_OPTS
+          value: "-Xms512m -Xmx512m"
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+          requests:
+            cpu: "100m"
+            memory: "512Mi"
         ports:
         - containerPort: 9200
 ---
@@ -72,6 +81,16 @@ spec:
       containers:
       - name: logstash
         image: logstash:8.10.2
+        env:
+        - name: LS_JAVA_OPTS
+          value: "-Xms256m -Xmx256m"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
         ports:
         - containerPort: 5044
         volumeMounts:
@@ -114,6 +133,13 @@ spec:
         env:
         - name: ELASTICSEARCH_HOSTS
           value: "http://elasticsearch:9200"
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
         ports:
         - containerPort: 5601
 ---
