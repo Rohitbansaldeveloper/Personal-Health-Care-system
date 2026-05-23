@@ -335,3 +335,5 @@ We are constantly evolving HealthCare Plus to include cutting-edge features:
 Distributed under the MIT License. See `LICENSE` for more information.
 
 Developed with ❤️ by [Rohit Bansal](https://github.com/Rohitbansaldeveloper)
+
+> **Infrastructure Update**: The deployment pipeline and ELK Stack have been optimized for better memory utilization on local Minikube clusters.
